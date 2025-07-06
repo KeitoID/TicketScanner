@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		CF140DD92DD0A7DD004C704B /* CropViewController in Frameworks */ = {isa = PBXBuildFile; productRef = CF140DD82DD0A7DD004C704B /* CropViewController */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		CF140DA42DD09856004C704B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -65,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CF140DD92DD0A7DD004C704B /* CropViewController in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,6 +130,7 @@
 			);
 			name = TicketScan;
 			packageProductDependencies = (
+				CF140DD82DD0A7DD004C704B /* CropViewController */,
 			);
 			productName = TicketScan;
 			productReference = CF140D8E2DD09855004C704B /* TicketScan.app */;
@@ -208,6 +214,9 @@
 			);
 			mainGroup = CF140D852DD09854004C704B;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CF140DD72DD0A7BF004C704B /* XCRemoteSwiftPackageReference "TOCropViewController" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CF140D8F2DD09855004C704B /* Products */;
 			projectDirPath = "";
@@ -573,6 +582,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CF140DD72DD0A7BF004C704B /* XCRemoteSwiftPackageReference "TOCropViewController" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/TimOliver/TOCropViewController.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.7.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CF140DD82DD0A7DD004C704B /* CropViewController */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CF140DD72DD0A7BF004C704B /* XCRemoteSwiftPackageReference "TOCropViewController" */;
+			productName = CropViewController;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CF140D862DD09854004C704B /* Project object */;
 }

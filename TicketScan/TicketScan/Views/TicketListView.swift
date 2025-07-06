@@ -13,6 +13,11 @@ struct TicketListView: View {
     var body: some View {
         NavigationView {
             VStack {
+                // リワード広告セクション
+                RewardAdView()
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                
                 // 検索バー
                 SearchBar(text: $viewModel.searchText)
                     .padding(.horizontal)
@@ -33,23 +38,62 @@ struct TicketListView: View {
                 }
                 
                 if viewModel.filteredTickets.isEmpty {
-                    ContentUnavailableView(
-                        "チケットがありません",
-                        systemImage: "ticket",
-                        description: Text("カメラボタンをタップしてチケットをスキャンしてください")
-                    )
+                    VStack(spacing: 20) {
+                        Spacer()
+                        
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.blue.opacity(0.1), Color.purple.opacity(0.1)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 120, height: 120)
+                            
+                            Image(systemName: "ticket")
+                                .font(.system(size: 48, weight: .light))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [.blue, .purple],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                        }
+                        
+                        VStack(spacing: 8) {
+                            Text("チケットがありません")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.primary)
+                            
+                            Text("カメラボタンをタップして\nチケットをスキャンしてください")
+                                .font(.system(size: 16))
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
                 } else {
-                    List {
-                        ForEach(viewModel.filteredTickets) { ticket in
-                            NavigationLink(destination: TicketDetailView(ticket: ticket, viewModel: viewModel)) {
-                                TicketRowView(ticket: ticket, viewModel: viewModel)
+                    ScrollView {
+                        LazyVStack(spacing: 16) {
+                            ForEach(viewModel.filteredTickets) { ticket in
+                                NavigationLink(destination: TicketDetailView(ticket: ticket, viewModel: viewModel)) {
+                                    ModernTicketCard(ticket: ticket, viewModel: viewModel)
+                                }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
-                        .onDelete(perform: deleteTickets)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 20)
                     }
                 }
             }
             .navigationTitle("チケット一覧")
+            .adBanner(placement: .bottom)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingScanner = true }) {
@@ -148,38 +192,128 @@ struct FilterView: View {
     }
 }
 
-struct TicketRowView: View {
+struct ModernTicketCard: View {
     let ticket: Ticket
     @ObservedObject var viewModel: TicketViewModel
+    @State private var isPressed = false
     
     var body: some View {
-        HStack {
-            if let uiImage = UIImage(data: ticket.imageData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 60, height: 60)
-                    .cornerRadius(8)
-            } else {
-                Color.gray
-                    .frame(width: 60, height: 60)
-                    .cornerRadius(8)
-            }
+        ZStack {
+            RoundedRectangle(cornerRadius: 20)
+                .fill(
+                    LinearGradient(
+                        colors: [Color(.systemBackground), Color(.systemBackground).opacity(0.8)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .shadow(
+                    color: .black.opacity(isPressed ? 0.15 : 0.08),
+                    radius: isPressed ? 20 : 15,
+                    x: 0,
+                    y: isPressed ? 8 : 5
+                )
+                .scaleEffect(isPressed ? 0.98 : 1.0)
             
-            VStack(alignment: .leading) {
-                Text(ticket.title)
-                    .font(.headline)
-                Text(ticket.location)
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
+            HStack(spacing: 16) {
+                // 画像セクション
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.blue.opacity(0.1), Color.purple.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 80, height: 80)
+                    
+                    if let uiImage = UIImage(data: ticket.imageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 76, height: 76)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    } else {
+                        Image(systemName: "ticket")
+                            .font(.system(size: 32, weight: .light))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.blue, .purple],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    }
+                }
+                
+                // 情報セクション
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(ticket.title)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "location")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.blue)
+                        Text(ticket.location)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.green)
+                        Text(ticket.eventDate.formatted(date: .abbreviated, time: .shortened))
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Spacer()
+                
+                // お気に入りボタン
+                VStack {
+                    Button(action: { 
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            viewModel.toggleFavorite(ticket)
+                        }
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(ticket.isFavorite ? Color.yellow.opacity(0.2) : Color.gray.opacity(0.1))
+                                .frame(width: 36, height: 36)
+                            
+                            Image(systemName: ticket.isFavorite ? "star.fill" : "star")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(ticket.isFavorite ? .yellow : .gray)
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Spacer()
+                }
             }
-            
-            Spacer()
-            
-            Button(action: { viewModel.toggleFavorite(ticket) }) {
-                Image(systemName: ticket.isFavorite ? "star.fill" : "star")
-                    .foregroundColor(ticket.isFavorite ? .yellow : .gray)
-            }
+            .padding(20)
         }
+        .onPressGesture(
+            onPress: { isPressed = true },
+            onRelease: { isPressed = false }
+        )
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+    }
+}
+
+extension View {
+    func onPressGesture(onPress: @escaping () -> Void, onRelease: @escaping () -> Void) -> some View {
+        self.simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in onPress() }
+                .onEnded { _ in onRelease() }
+        )
     }
 } 
