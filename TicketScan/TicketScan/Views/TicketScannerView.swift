@@ -13,10 +13,15 @@ struct TicketScannerView: View {
     @State private var location = ""
     @State private var description = ""
     @State private var eventDate = Date()
+    @State private var rating = 0
+    @State private var category = TicketCategory.other
     @State private var isProcessingOCR = false
     @State private var ocrText = ""
     @State private var showingOCRResults = false
+    @State private var showingOCRFeedback = false
+    @State private var ocrSuccess = false
     @StateObject private var adManager = AdManager.shared
+    @StateObject private var ocrRewardManager = OCRRewardManager.shared
     
     var body: some View {
         NavigationView {
@@ -51,31 +56,12 @@ struct TicketScannerView: View {
                             }
                             .padding(.horizontal, 20)
                             
-                            // OCRボタン
+                            // OCR リワード広告ボタン
                             if !isProcessingOCR {
-                                Button(action: { 
+                                OCRRewardAdView(ticketId: nil) {
                                     withAnimation(.easeInOut) {
                                         performOCR()
                                     }
-                                }) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "doc.text.viewfinder")
-                                            .font(.system(size: 18, weight: .semibold))
-                                        Text("AIテキスト認識")
-                                            .font(.system(size: 16, weight: .semibold))
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
-                                    .background(
-                                        LinearGradient(
-                                            colors: [Color.green, Color.green.opacity(0.8)],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                    .foregroundColor(.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                                    .shadow(color: .green.opacity(0.3), radius: 8, x: 0, y: 4)
                                 }
                                 .padding(.horizontal, 20)
                             } else {
@@ -267,6 +253,82 @@ struct TicketScannerView: View {
                                 DatePicker("", selection: $eventDate, displayedComponents: [.date, .hourAndMinute])
                                     .datePickerStyle(.compact)
                                     .frame(maxWidth: .infinity, alignment: .leading)
+                                    .environment(\.locale, Locale(identifier: "ja_JP"))
+                            }
+                            
+                            // 評価
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Image(systemName: "star")
+                                        .foregroundColor(.yellow)
+                                        .font(.system(size: 16, weight: .medium))
+                                    Text("評価")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.primary)
+                                }
+                                
+                                HStack {
+                                    StarRatingView(rating: $rating, starSize: 24)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(.systemGray6))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                                        )
+                                )
+                            }
+                            
+                            // カテゴリ
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Image(systemName: "tag")
+                                        .foregroundColor(.blue)
+                                        .font(.system(size: 16, weight: .medium))
+                                    Text("カテゴリ")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.primary)
+                                }
+                                
+                                Menu {
+                                    ForEach(TicketCategory.allCases, id: \.self) { cat in
+                                        Button(action: {
+                                            category = cat
+                                        }) {
+                                            HStack {
+                                                Image(systemName: cat.icon)
+                                                Text(cat.displayName)
+                                                if category == cat {
+                                                    Spacer()
+                                                    Image(systemName: "checkmark")
+                                                }
+                                            }
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        Image(systemName: category.icon)
+                                            .foregroundColor(.blue)
+                                        Text(category.displayName)
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .foregroundColor(.blue)
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                                    )
+                                }
                             }
                         }
                         .padding(.horizontal, 20)
@@ -320,6 +382,22 @@ struct TicketScannerView: View {
                     eventDate: $eventDate
                 )
             }
+            .sheet(isPresented: $showingOCRFeedback) {
+                OCRFeedbackView(
+                    success: ocrSuccess,
+                    extractedText: ocrText,
+                    onDismiss: {
+                        showingOCRFeedback = false
+                        if ocrSuccess && !ocrText.isEmpty {
+                            showingOCRResults = true
+                        }
+                    }
+                )
+            }
+        }
+        .onAppear {
+            // 新規チケット作成時はOCR状態をリセット
+            ocrRewardManager.switchToNewTicket()
         }
     }
     
@@ -332,7 +410,9 @@ struct TicketScannerView: View {
             location: location,
             description: description,
             imageData: imageData,
-            eventDate: eventDate
+            eventDate: eventDate,
+            rating: rating,
+            category: category
         )
         
         viewModel.addTicket(ticket)
@@ -357,22 +437,33 @@ struct TicketScannerView: View {
                 switch result {
                 case .success(let text):
                     ocrText = text
-                    let ticketInfo = OCRService.shared.extractTicketInfo(from: text)
                     
-                    if !ticketInfo.title.isEmpty {
-                        title = ticketInfo.title
-                    }
-                    if !ticketInfo.venue.isEmpty {
-                        location = ticketInfo.venue
-                    }
-                    if let extractedDate = ticketInfo.eventDate {
-                        eventDate = extractedDate
+                    // テキストが実際に検出されたかチェック
+                    let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmedText.isEmpty {
+                        ocrSuccess = true
+                        let ticketInfo = OCRService.shared.extractTicketInfo(from: text)
+                        
+                        if !ticketInfo.title.isEmpty {
+                            title = ticketInfo.title
+                        }
+                        if !ticketInfo.venue.isEmpty {
+                            location = ticketInfo.venue
+                        }
+                        if let extractedDate = ticketInfo.eventDate {
+                            eventDate = extractedDate
+                        }
+                    } else {
+                        ocrSuccess = false
                     }
                     
-                    showingOCRResults = true
+                    showingOCRFeedback = true
                     
                 case .failure(let error):
                     print("OCR Error: \(error.localizedDescription)")
+                    ocrSuccess = false
+                    ocrText = ""
+                    showingOCRFeedback = true
                 }
             }
         }

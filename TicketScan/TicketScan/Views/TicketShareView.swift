@@ -46,7 +46,7 @@ struct TicketShareView: View {
                         HStack {
                             Image(systemName: "calendar")
                                 .foregroundColor(.blue)
-                            Text(ticket.eventDate.formatted(date: .long, time: .shortened))
+                            Text(ticket.eventDate.formatted(date: .numeric, time: .shortened))
                                 .font(.headline)
                         }
                         
@@ -108,7 +108,7 @@ struct TicketShareView: View {
                     
                     HStack {
                         Image(systemName: "calendar")
-                        Text(ticket.eventDate.formatted(date: .long, time: .shortened))
+                        Text(ticket.eventDate.formatted(date: .numeric, time: .shortened))
                             .font(.headline)
                     }
                     

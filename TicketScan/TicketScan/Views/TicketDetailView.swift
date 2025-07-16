@@ -10,6 +10,12 @@ struct TicketDetailView: View {
     @State private var editedLocation: String
     @State private var editedDescription: String
     @State private var editedEventDate: Date
+    @State private var editedRating: Int
+    @State private var editedCategory: TicketCategory
+    @State private var showingOCRFeedback = false
+    @State private var ocrSuccess = false
+    @State private var ocrText = ""
+    @StateObject private var ocrRewardManager = OCRRewardManager.shared
     
     init(ticket: Ticket, viewModel: TicketViewModel) {
         self.ticket = ticket
@@ -18,6 +24,8 @@ struct TicketDetailView: View {
         _editedLocation = State(initialValue: ticket.location)
         _editedDescription = State(initialValue: ticket.description)
         _editedEventDate = State(initialValue: ticket.eventDate)
+        _editedRating = State(initialValue: ticket.rating)
+        _editedCategory = State(initialValue: ticket.category)
     }
     
     var body: some View {
@@ -121,8 +129,9 @@ struct TicketDetailView: View {
                                 if isEditing {
                                     DatePicker("", selection: $editedEventDate, displayedComponents: [.date, .hourAndMinute])
                                         .datePickerStyle(.compact)
+                                        .environment(\.locale, Locale(identifier: "ja_JP"))
                                 } else {
-                                    Text(ticket.eventDate.formatted(date: .long, time: .shortened))
+                                    Text(ticket.eventDate.formatted(date: .numeric, time: .shortened))
                                         .font(.system(size: 18, weight: .medium))
                                         .foregroundColor(.secondary)
                                 }
@@ -188,9 +197,98 @@ struct TicketDetailView: View {
                                         .foregroundColor(.primary)
                                 }
                                 
-                                Text(ticket.createdAt.formatted(date: .long, time: .shortened))
+                                Text(ticket.createdAt.formatted(date: .numeric, time: .shortened))
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.secondary)
+                            }
+                            
+                            // 評価
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Image(systemName: "star")
+                                        .foregroundColor(.yellow)
+                                        .font(.system(size: 16, weight: .medium))
+                                    Text("評価")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.primary)
+                                }
+                                
+                                if isEditing {
+                                    StarRatingView(rating: $editedRating, starSize: 24)
+                                } else {
+                                    if ticket.rating > 0 {
+                                        StarRatingDisplayView(rating: ticket.rating, starSize: 20)
+                                    } else {
+                                        Text("未評価")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
+                            
+                            // カテゴリ
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Image(systemName: "tag")
+                                        .foregroundColor(.blue)
+                                        .font(.system(size: 16, weight: .medium))
+                                    Text("カテゴリ")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.primary)
+                                }
+                                
+                                if isEditing {
+                                    Menu {
+                                        ForEach(TicketCategory.allCases, id: \.self) { category in
+                                            Button(action: {
+                                                editedCategory = category
+                                            }) {
+                                                HStack {
+                                                    Image(systemName: category.icon)
+                                                    Text(category.displayName)
+                                                    if editedCategory == category {
+                                                        Spacer()
+                                                        Image(systemName: "checkmark")
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } label: {
+                                        HStack {
+                                            Image(systemName: editedCategory.icon)
+                                                .foregroundColor(.blue)
+                                            Text(editedCategory.displayName)
+                                                .font(.system(size: 16, weight: .medium))
+                                                .foregroundColor(.primary)
+                                            Spacer()
+                                            Image(systemName: "chevron.down")
+                                                .foregroundColor(.blue)
+                                        }
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(12)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                                        )
+                                    }
+                                } else {
+                                    HStack {
+                                        Image(systemName: ticket.category.icon)
+                                            .foregroundColor(.blue)
+                                        Text(ticket.category.displayName)
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
+                            
+                            // OCR リワード広告（編集中のみ表示）
+                            if isEditing {
+                                OCRRewardAdView(ticketId: ticket.id.uuidString) {
+                                    performOCR()
+                                }
                             }
                         }
                         .padding(24)
@@ -225,7 +323,9 @@ struct TicketDetailView: View {
                                     title: editedTitle,
                                     location: editedLocation,
                                     description: editedDescription,
-                                    eventDate: editedEventDate
+                                    eventDate: editedEventDate,
+                                    rating: editedRating,
+                                    category: editedCategory
                                 )
                             }
                             isEditing.toggle()
@@ -246,6 +346,62 @@ struct TicketDetailView: View {
         }
         .sheet(isPresented: $showingShareSheet) {
             TicketShareView(ticket: ticket)
+        }
+        .sheet(isPresented: $showingOCRFeedback) {
+            OCRFeedbackView(
+                success: ocrSuccess,
+                extractedText: ocrText,
+                onDismiss: {
+                    showingOCRFeedback = false
+                    if ocrSuccess && !ocrText.isEmpty {
+                        // OCR成功時は編集フィールドに自動入力
+                        DispatchQueue.main.async {
+                            let ticketInfo = OCRService.shared.extractTicketInfo(from: ocrText)
+                            
+                            if !ticketInfo.title.isEmpty {
+                                editedTitle = ticketInfo.title
+                            }
+                            if !ticketInfo.venue.isEmpty {
+                                editedLocation = ticketInfo.venue
+                            }
+                            if let extractedDate = ticketInfo.eventDate {
+                                editedEventDate = extractedDate
+                            }
+                        }
+                    }
+                }
+            )
+        }
+        .onAppear {
+            // 別のチケットの場合はOCR状態をリセット
+            if ocrRewardManager.currentSessionTicketId != ticket.id.uuidString {
+                ocrRewardManager.switchToNewTicket()
+            }
+        }
+    }
+    
+    private func performOCR() {
+        guard let image = UIImage(data: ticket.imageData) else { return }
+        
+        OCRService.shared.recognizeText(from: image) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let text):
+                    ocrText = text
+                    
+                    // テキストが実際に検出されたかチェック
+                    let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    ocrSuccess = !trimmedText.isEmpty
+                    
+                    showingOCRFeedback = true
+                    
+                case .failure(let error):
+                    print("OCR Error: \(error.localizedDescription)")
+                    ocrSuccess = false
+                    ocrText = ""
+                    showingOCRFeedback = true
+                }
+            }
         }
     }
 }

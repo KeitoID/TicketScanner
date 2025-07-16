@@ -21,7 +21,7 @@ class OCRService {
         
         let request = VNRecognizeTextRequest { request, error in
             if let error = error {
-                completion(.failure(error))
+                completion(.failure(OCRError.visionRequestFailed(error)))
                 return
             }
             
@@ -34,7 +34,11 @@ class OCRService {
                 observation.topCandidates(1).first?.string
             }.joined(separator: "\n")
             
-            completion(.success(recognizedText))
+            if recognizedText.isEmpty {
+                completion(.failure(OCRError.noTextFound))
+            } else {
+                completion(.success(recognizedText))
+            }
         }
         
         request.recognitionLanguages = ["ja-JP", "en-US"]
@@ -47,7 +51,7 @@ class OCRService {
             do {
                 try handler.perform([request])
             } catch {
-                completion(.failure(error))
+                completion(.failure(OCRError.imageProcessingFailed(error)))
             }
         }
     }
@@ -139,6 +143,8 @@ enum OCRError: Error, LocalizedError {
     case invalidImage
     case noTextFound
     case processingFailed
+    case visionRequestFailed(Error)
+    case imageProcessingFailed(Error)
     
     var errorDescription: String? {
         switch self {
@@ -148,6 +154,10 @@ enum OCRError: Error, LocalizedError {
             return "テキストが見つかりませんでした"
         case .processingFailed:
             return "処理に失敗しました"
+        case .visionRequestFailed(let error):
+            return "Vision処理エラー: \(error.localizedDescription)"
+        case .imageProcessingFailed(let error):
+            return "画像処理エラー: \(error.localizedDescription)"
         }
     }
 }

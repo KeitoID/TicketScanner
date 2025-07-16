@@ -75,7 +75,7 @@ class TicketViewModel: ObservableObject {
         }
     }
     
-    func updateTicket(_ ticket: Ticket, title: String, location: String, description: String, eventDate: Date) {
+    func updateTicket(_ ticket: Ticket, title: String, location: String, description: String, eventDate: Date, rating: Int, category: TicketCategory) {
         let fetchRequest: NSFetchRequest<TicketEntity> = TicketEntity.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "id == %@", ticket.id as CVarArg)
         
@@ -86,6 +86,8 @@ class TicketViewModel: ObservableObject {
                 entity.location = location
                 entity.desc = description
                 entity.eventDate = eventDate
+                entity.rating = Int16(rating)
+                entity.category = category.rawValue
                 save()
                 fetchTickets()
             }

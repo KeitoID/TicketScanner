@@ -13,11 +13,6 @@ struct TicketListView: View {
     var body: some View {
         NavigationView {
             VStack {
-                // リワード広告セクション
-                RewardAdView()
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                
                 // 検索バー
                 SearchBar(text: $viewModel.searchText)
                     .padding(.horizontal)
@@ -95,6 +90,12 @@ struct TicketListView: View {
             .navigationTitle("チケット一覧")
             .adBanner(placement: .bottom)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    NavigationLink(destination: TicketGalleryView(viewModel: viewModel)) {
+                        Image(systemName: "square.grid.2x2")
+                    }
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingScanner = true }) {
                         Image(systemName: "camera")
@@ -268,7 +269,7 @@ struct ModernTicketCard: View {
                         Image(systemName: "calendar")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.green)
-                        Text(ticket.eventDate.formatted(date: .abbreviated, time: .shortened))
+                        Text(ticket.eventDate.formatted(date: .numeric, time: .shortened))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.secondary)
                     }

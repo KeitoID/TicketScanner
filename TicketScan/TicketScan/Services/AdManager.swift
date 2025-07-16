@@ -1,5 +1,5 @@
 import SwiftUI
-import GoogleMobileAds
+import UIKit
 
 class AdManager: NSObject, ObservableObject {
     static let shared = AdManager()
@@ -12,35 +12,30 @@ class AdManager: NSObject, ObservableObject {
     @Published var showingInterstitial = false
     @Published var showingRewarded = false
     
-    private var interstitialAd: GADInterstitialAd?
-    private var rewardedAd: GADRewardedAd?
+    private var interstitialAd: String?
+    private var rewardedAd: String?
     
     override init() {
         super.init()
-        GADMobileAds.sharedInstance().start(completionHandler: nil)
+        print("広告SDK初期化")
         loadInterstitialAd()
         loadRewardedAd()
     }
     
     // MARK: - バナー広告
-    func createBannerView() -> GADBannerView {
-        let bannerView = GADBannerView(adSize: GADAdSizeBanner)
-        bannerView.adUnitID = bannerAdUnitID
-        bannerView.rootViewController = UIApplication.shared.windows.first?.rootViewController
-        bannerView.load(GADRequest())
+    func createBannerView() -> UIView {
+        let bannerView = UIView()
+        bannerView.backgroundColor = .lightGray
+        print("バナー広告プレースホルダーを作成")
         return bannerView
     }
     
     // MARK: - インタースティシャル広告
     func loadInterstitialAd() {
-        let request = GADRequest()
-        GADInterstitialAd.load(withAdUnitID: interstitialAdUnitID, request: request) { [weak self] ad, error in
-            if let error = error {
-                print("インタースティシャル広告の読み込みに失敗: \(error.localizedDescription)")
-                return
-            }
-            self?.interstitialAd = ad
-            self?.interstitialAd?.fullScreenContentDelegate = self
+        print("インタースティシャル広告を読み込み中...")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+            self?.interstitialAd = "loaded"
+            print("インタースティシャル広告読み込み完了")
         }
     }
     
@@ -51,17 +46,13 @@ class AdManager: NSObject, ObservableObject {
             return
         }
         
-        guard let interstitialAd = interstitialAd else {
+        guard interstitialAd != nil else {
             print("インタースティシャル広告が準備できていません")
             loadInterstitialAd() // 次回のために再読み込み
             return
         }
         
-        guard let rootViewController = UIApplication.shared.windows.first?.rootViewController else {
-            return
-        }
-        
-        interstitialAd.present(fromRootViewController: rootViewController)
+        print("インタースティシャル広告を表示")
         
         // 表示記録
         AdFrequencyManager.shared.recordInterstitialShown()
@@ -70,54 +61,42 @@ class AdManager: NSObject, ObservableObject {
     
     // MARK: - リワード動画広告
     func loadRewardedAd() {
-        let request = GADRequest()
-        GADRewardedAd.load(withAdUnitID: rewardedAdUnitID, request: request) { [weak self] ad, error in
-            if let error = error {
-                print("リワード動画広告の読み込みに失敗: \(error.localizedDescription)")
-                return
-            }
-            self?.rewardedAd = ad
-            self?.rewardedAd?.fullScreenContentDelegate = self
+        print("リワード動画広告を読み込み中...")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+            self?.rewardedAd = "loaded"
+            print("リワード動画広告読み込み完了")
         }
     }
     
     func showRewardedAd(completion: @escaping (Bool) -> Void) {
-        guard let rewardedAd = rewardedAd else {
+        guard rewardedAd != nil else {
             print("リワード動画広告が準備できていません")
             loadRewardedAd()
             completion(false)
             return
         }
         
-        guard let rootViewController = UIApplication.shared.windows.first?.rootViewController else {
-            completion(false)
-            return
-        }
+        print("リワード動画広告を表示")
         
-        rewardedAd.present(fromRootViewController: rootViewController) {
-            let reward = rewardedAd.adReward
-            print("ユーザーが報酬を獲得: \(reward.amount) \(reward.type)")
+        // シミュレート報酬
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            print("ユーザーが報酬を獲得: 1 coin")
             completion(true)
         }
     }
 }
 
-// MARK: - GADFullScreenContentDelegate
-extension AdManager: GADFullScreenContentDelegate {
-    func adDidDismissFullScreenContent(_ ad: GADFullScreenPresentingAd) {
-        if ad is GADInterstitialAd {
-            loadInterstitialAd() // 次回のために再読み込み
-        } else if ad is GADRewardedAd {
-            loadRewardedAd() // 次回のために再読み込み
-        }
+// MARK: - 広告デリゲート（プレースホルダー）
+extension AdManager {
+    func adDidDismiss() {
+        print("広告が閉じられました")
+        loadInterstitialAd()
+        loadRewardedAd()
     }
     
-    func ad(_ ad: GADFullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
-        print("広告の表示に失敗: \(error.localizedDescription)")
-        if ad is GADInterstitialAd {
-            loadInterstitialAd()
-        } else if ad is GADRewardedAd {
-            loadRewardedAd()
-        }
+    func adDidFailToPresent() {
+        print("広告の表示に失敗")
+        loadInterstitialAd()
+        loadRewardedAd()
     }
 }

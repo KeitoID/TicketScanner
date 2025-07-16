@@ -1,5 +1,4 @@
 import Foundation
-import GoogleMobileAds
 import AppTrackingTransparency
 import AdSupport
 
@@ -13,29 +12,17 @@ class AdConfiguration {
         if #available(iOS 14, *) {
             ATTrackingManager.requestTrackingAuthorization { status in
                 DispatchQueue.main.async {
-                    GADMobileAds.sharedInstance().start(completionHandler: nil)
+                    print("広告SDK初期化（GoogleMobileAdsなし）")
                 }
             }
         } else {
-            GADMobileAds.sharedInstance().start(completionHandler: nil)
+            print("広告SDK初期化（iOS 14未満）")
         }
-        
-        // テスト用デバイスIDを設定（開発時のみ）
-        #if DEBUG
-        GADMobileAds.sharedInstance().requestConfiguration.testDeviceIdentifiers = [GADSimulatorID]
-        #endif
     }
     
     func configureTargeting() {
-        // 広告のターゲティング設定
-        let extras = GADExtras()
-        extras.additionalParameters = [
-            "category": "entertainment",
-            "keywords": "ticket,event,concert,sports"
-        ]
-        
-        let request = GADRequest()
-        request.register(extras)
+        // 広告のターゲティング設定（GoogleMobileAdsなし）
+        print("広告ターゲティング設定: entertainment, ticket, event, concert, sports")
     }
 }
 

@@ -216,6 +216,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				CF140DD72DD0A7BF004C704B /* XCRemoteSwiftPackageReference "TOCropViewController" */,
+				CF37AEAE2E27197100D02F3F /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CF140D8F2DD09855004C704B /* Products */;
@@ -590,6 +591,14 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 2.7.4;
+			};
+		};
+		CF37AEAE2E27197100D02F3F /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.7.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

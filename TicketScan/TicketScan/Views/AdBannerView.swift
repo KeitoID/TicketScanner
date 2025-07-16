@@ -1,22 +1,34 @@
 import SwiftUI
-import GoogleMobileAds
+import UIKit
 
 struct AdBannerView: UIViewRepresentable {
-    let adSize: GADAdSize
+    let height: CGFloat
     
-    init(adSize: GADAdSize = GADAdSizeBanner) {
-        self.adSize = adSize
+    init(height: CGFloat = 50) {
+        self.height = height
     }
     
-    func makeUIView(context: Context) -> GADBannerView {
-        let bannerView = GADBannerView(adSize: adSize)
-        bannerView.adUnitID = "ca-app-pub-3940256099942544/2934735716" // テスト用ID
-        bannerView.rootViewController = UIApplication.shared.windows.first?.rootViewController
-        bannerView.load(GADRequest())
+    func makeUIView(context: Context) -> UIView {
+        let bannerView = UIView()
+        bannerView.backgroundColor = UIColor.systemGray5
+        
+        let label = UILabel()
+        label.text = "広告エリア（プレースホルダー）"
+        label.textAlignment = .center
+        label.font = UIFont.systemFont(ofSize: 12)
+        label.textColor = UIColor.systemGray
+        label.translatesAutoresizingMaskIntoConstraints = false
+        
+        bannerView.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: bannerView.centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: bannerView.centerYAnchor)
+        ])
+        
         return bannerView
     }
     
-    func updateUIView(_ uiView: GADBannerView, context: Context) {
+    func updateUIView(_ uiView: UIView, context: Context) {
         // 必要に応じて更新処理
     }
 }

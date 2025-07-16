@@ -1,6 +1,24 @@
 {
-  "originHash" : "13653293ccb2b03fb3a569cd04e20814001c852aa41dbb682ce436209ddd9ee2",
+  "originHash" : "7ec0416df73b3222f60d68d7b2405e4c92bfea396bfc8cf25227cd5eb1fa90d0",
   "pins" : [
+    {
+      "identity" : "swift-package-manager-google-mobile-ads",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/googleads/swift-package-manager-google-mobile-ads",
+      "state" : {
+        "revision" : "d24a9f5ad472610598449dc669befa5b7ed50658",
+        "version" : "12.7.0"
+      }
+    },
+    {
+      "identity" : "swift-package-manager-google-user-messaging-platform",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/googleads/swift-package-manager-google-user-messaging-platform.git",
+      "state" : {
+        "revision" : "69b53394c5258b3fe688e625a998047d1f393497",
+        "version" : "3.0.0"
+      }
+    },
     {
       "identity" : "tocropviewcontroller",
       "kind" : "remoteSourceControl",

@@ -56,6 +56,7 @@ struct OCRResultsView: View {
                             .foregroundColor(.gray)
                         DatePicker("開催日時", selection: $eventDate, displayedComponents: [.date, .hourAndMinute])
                             .datePickerStyle(CompactDatePickerStyle())
+                            .environment(\.locale, Locale(identifier: "ja_JP"))
                     }
                     .padding(.vertical, 4)
                 }
